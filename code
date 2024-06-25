@@ -1,0 +1,67 @@
+import pandas as pd
+
+df = pd.read_csv("C:\\Users\\bhakt\\OneDrive\\Desktop\\andha_paisa\\venv\\lt_nse.csv")
+
+def rsi(days, startday):
+    sumU = 0
+    sumD = 0
+    stopday = startday - days
+    
+    for i in range(startday, stopday, -1):
+        close1 = df.loc[i, 'Close']
+        close2 = df.loc[i-1, 'Close']
+        if close1 >= close2:
+            sumU += close1 - close2
+        else:
+            sumD += close2 - close1
+    
+    avgU = sumU / days
+    avgD = sumD / days
+    
+    if avgD != 0:
+        RS = avgU / avgD
+    else:
+        RS = 100
+        
+    RSI = 100 - 100 / (RS + 1)
+    return RSI
+
+def ema(days, startday, emaof):
+    ema = df.loc[startday, emaof]
+    alpha = 2 / (days + 1)
+    stopday = startday - days
+    
+    for i in range(startday, stopday, -1):
+        close = df.loc[i, emaof]
+        ema = alpha * close + (1 - alpha) * ema
+        
+    return ema
+
+def column_ema(days, column_name):
+    ema_values = []
+    for i in range(len(df)):
+        if i < days:
+            ema_values.append(None)
+        else:
+            ema_value = ema(days, i, column_name)
+            ema_values.append(ema_value)
+    return ema_values
+
+def macd():
+    df['ema12'] = column_ema(12, 'Close')
+    df['ema26'] = column_ema(26, 'Close')
+    df['MACD'] = df['ema12'] - df['ema26']
+
+    SL = []
+    for i in range(len(df)):
+        if i < 9:
+            SL.append(None)
+        else:
+            signal_line_value = ema(9, i, 'MACD')
+            SL.append(signal_line_value)
+    
+    df['SL'] = SL
+    
+    print(df)
+
+macd()
