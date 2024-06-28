@@ -72,7 +72,7 @@ print (df.head(28))
 
 #plotting rsi, macd and cp
 plt.plot(df.index, df['MACD'], color = 'blue', label = 'MACD')
-plt.plot(df.index, df['Close']/10, color = 'red', label = 'Closing Price')
+plt.plot(df.index, df['Close']/10, color = 'red', label = 'Closing Price/10')
 plt.plot(df.index, df['RSI'], color = 'green', label = 'RSI')
 plt.legend()
 plt.show()
