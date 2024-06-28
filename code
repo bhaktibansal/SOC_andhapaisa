@@ -1,13 +1,15 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 df = pd.read_csv("C:\\Users\\bhakt\\OneDrive\\Desktop\\andha_paisa\\venv\\lt_nse.csv")
 
-def rsi(days, startday):
+def rsi(days, stopday):
     sumU = 0
     sumD = 0
-    stopday = startday - days
+    startday = stopday - days
     
-    for i in range(startday, stopday, -1):
+    for i in range(startday + 1, stopday + 1, 1):
         close1 = df.loc[i, 'Close']
         close2 = df.loc[i-1, 'Close']
         if close1 >= close2:
@@ -31,7 +33,7 @@ def ema(days, startday, emaof):
     alpha = 2 / (days + 1)
     stopday = startday - days
     
-    for i in range(startday, stopday, -1):
+    for i in range(startday -1, stopday, -1):
         close = df.loc[i, emaof]
         ema = alpha * close + (1 - alpha) * ema
         
@@ -61,7 +63,16 @@ def macd():
             SL.append(signal_line_value)
     
     df['SL'] = SL
-    
-    print(df)
 
 macd()
+
+for j in range(14, len(df), 1):
+    df.loc[j, 'RSI'] = rsi(14, j)
+print (df.head(28))
+
+#plotting rsi, macd and cp
+plt.plot(df.index, df['MACD'], color = 'blue', label = 'MACD')
+plt.plot(df.index, df['Close']/10, color = 'red', label = 'Closing Price')
+plt.plot(df.index, df['RSI'], color = 'green', label = 'RSI')
+plt.legend()
+plt.show()
