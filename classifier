@@ -1,0 +1,163 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+df = pd.read_csv("C:\\Users\\bhakt\\OneDrive\\Desktop\\andha_paisa\\LT.NS5.csv")
+
+def rsi(days, stopday):
+    sumU = 0
+    sumD = 0
+    startday = stopday - days
+    
+    for i in range(startday + 1, stopday + 1):
+        close1 = df.loc[i, 'Close']
+        close2 = df.loc[i-1, 'Close']
+        if close1 >= close2:
+            sumU += close1 - close2
+        else:
+            sumD += close2 - close1
+    
+    avgU = sumU / days
+    avgD = sumD / days
+    
+    if avgD != 0:
+        RS = avgU / avgD
+    else:
+        RS = 100
+        
+    RSI = 100 - 100 / (RS + 1)
+    return RSI
+
+def ema(days, startday, emaof):
+    ema = df.loc[startday, emaof]
+    alpha = 2 / (days + 1)
+    stopday = startday - days
+    
+    for i in range(startday - 1, stopday, -1):
+        close = df.loc[i, emaof]
+        ema = alpha * close + (1 - alpha) * ema
+        
+    return ema
+
+def ma(days, stopday, maof):
+    sum = 0
+    if (stopday - days) >= 0:
+        for i in range(stopday - days, stopday + 1):
+            sum += df.loc[i, maof]
+        return (sum/days)
+
+def column_ma(days, maof):
+    ma_values = []
+    for i in range(len(df)):
+        if i < days:
+            ma_values.append(None)
+        else:
+            ma_value = ma(days, i, maof)
+            ma_values.append(ma_value)
+    return ma_values
+
+def column_ema(days, column_name):
+    ema_values = []
+    for i in range(len(df)):
+        if i < days:
+            ema_values.append(None)
+        else:
+            ema_value = ema(days, i, column_name)
+            ema_values.append(ema_value)
+    return ema_values
+
+def macd():
+    df['ema12'] = column_ema(12, 'Close')
+    df['ema26'] = column_ema(26, 'Close')
+    df['MACD'] = df['ema12'] - df['ema26']
+
+    SL = []
+    for i in range(len(df)):
+        if i < 9:
+            SL.append(None)
+        else:
+            signal_line_value = ema(9, i, 'MACD')
+            SL.append(signal_line_value)
+    
+    df['SL'] = SL
+
+def cpc():
+    pctch = []
+    for i in range(len(df)):
+        if i == 0:
+            pctch.append(None)
+        else:
+            pctch.append((df.loc[i, 'Close'] - df.loc[i-1, 'Close'])*100/df.loc[i-1, 'Close'])
+    df['cpc'] = pctch
+
+def obv():
+    obv = []
+    for i in range(len(df)):
+        if i == 0:
+            obv.append(df.loc[i, 'Volume'])
+        else:
+            if df.loc[i, 'Close'] > df.loc[i-1, 'Close']:
+                obv.append(obv[i-1] + df.loc[i, 'Volume'])
+            elif df.loc[i, 'Close'] == df.loc[i-1, 'Close']:
+                obv.append(obv[i-1])
+            else:
+                obv.append(obv[i-1] - df.loc[i, 'Volume'])
+    df['obv'] = obv
+
+def williamsR(period):
+    k = []
+    for i in range(len(df)):
+        if i <= period:
+            k.append(None)
+        else:
+            high_period = max(df.loc[i-period:i, 'High'])
+            low_period = min(df.loc[i-period:i, 'Low'])
+            k.append((df.loc[i, 'Close'] - high_period)/(high_period - low_period))
+    df['WR'] = k
+
+def target():
+    y = []
+    for i in range(len(df)):
+        if i == len(df) - 1:
+            y.append(1)
+        else:
+            if (df.loc[i+1, 'Close'] > df.loc[i, 'Close']):
+                y.append(1)
+            else:
+                y.append(0)
+    df['y'] = y
+
+def main():
+    macd()
+    cpc()
+    obv()
+    williamsR(14)
+    target()
+    df['MA20'] = column_ma(20, 'Close')
+    df['MA50'] = column_ma(50, 'Close')
+    df['close-open'] = df['Close'] - df['Open']
+    df['close-adjclose'] = df['Close'] - df['Adj Close']
+    df['adjc - open'] = df['Adj Close'] - df['Open']
+    df['high - low'] = df['High'] - df['Low']
+    for j in range(14, len(df)):
+        df.loc[j, 'RSI'] = rsi(14, j)
+    
+
+    #features
+    features = ['ema12', 'ema26', 'MACD', 'SL', 'cpc', 'obv', 'WR', 'MA20', 'MA50', 'close-open', 'close-adjclose', 'adjc - open', 'high - low']
+
+    X = df[features]
+    y = df['y']
+
+    #splitting
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    #training
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+
+    #evaluation
+    accuracy = model.score(X_test, y_test)
+    print(f"Accuracy: {accuracy}")
+
+main()
