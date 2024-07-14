@@ -135,16 +135,24 @@ def main():
     target()
     df['MA20'] = column_ma(20, 'Close')
     df['MA50'] = column_ma(50, 'Close')
-    df['close-open'] = df['Close'] - df['Open']
-    df['close-adjclose'] = df['Close'] - df['Adj Close']
-    df['adjc - open'] = df['Adj Close'] - df['Open']
-    df['high - low'] = df['High'] - df['Low']
+    df['close-open'] = df['Close'] - df['Open'].min()/(df['Close'].max() - df['Open'].min())
+    df['close-adjclose'] = df['Close'] - df['Adj Close']/(df['Close'].max() - df['Adj Close'].min())
+    df['adjc - open'] = df['Adj Close'] - df['Open']/(df['Adj Close'].max() - df['Open'].min())
+    df['high - low'] = df['High'] - df['Low']/(df['High'].max() - df['Low'].min())
     for j in range(14, len(df)):
         df.loc[j, 'RSI'] = rsi(14, j)
     
+    df['normema12'] = (df['ema12'] - df['ema12'].mean())/df['ema12'].std()
+    df['normema26'] = (df['ema26'] - df['ema26'].mean())/df['ema26'].std()
+    df['normMACD'] = (df['MACD'] - df['MACD'].mean())/df['MACD'].std()
+    df['normSL'] = (df['SL'] - df['SL'].mean())/df['SL'].std()
+    df['normMA20'] = (df['MA20'] - df['MA20'].mean())/df['MA20'].std()
+    df['normMA50'] = (df['MA50'] - df['MA50'].mean())/df['MA50'].std()
+
+    
 
     #features
-    features = ['ema12', 'ema26', 'MACD', 'SL', 'cpc', 'obv', 'WR', 'MA20', 'MA50', 'close-open', 'close-adjclose', 'adjc - open', 'high - low']
+    features = ['normema12', 'normema26', 'normMACD', 'normSL', 'cpc', 'obv', 'WR', 'normMA20', 'normMA50', 'close-open', 'close-adjclose', 'adjc - open', 'high - low']
 
     X = df[features]
     y = df['y']
@@ -161,3 +169,4 @@ def main():
     print(f"Accuracy: {accuracy}")
 
 main()
+
